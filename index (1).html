@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบลงทะเบียนรถยนต์ - TCM Transportation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS & JS for real map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+        #realMap { height: 320px; min-height: 320px; width: 100%; border-radius: 0.5rem; }
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+            font-family: 'Sarabun', sans-serif;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-blue-900 text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-white p-2 rounded-lg">
+                        <svg class="w-8 h-8 text-blue-900" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold">TCM Transportation</h1>
+                        <p class="text-blue-200">ระบบจัดการรถยนต์แผนกขนส่ง</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-blue-200">วันที่: <span id="currentDate"></span></p>
+                    <p class="text-sm text-blue-200">เวลา: <span id="currentTime"></span></p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-6 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Registration Form Panel -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                        </svg>
+                        ลงทะเบียนการใช้รถ
+                    </h2>
+                    
+                    <form id="vehicleForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">หมายเลขทะเบียนรถ</label>
+                            <input type="text" id="plateNumber" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required placeholder="เช่น กข 1234">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อผู้ขับ</label>
+                            <input type="text" id="driverName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required placeholder="ชื่อผู้ขับ">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">งานที่ไป</label>
+                            <select id="jobType" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                <option value="">เลือกประเภทงาน</option>
+                                <option value="ส่งสินค้า">ส่งสินค้า</option>
+                                <option value="รับสินค้า">รับสินค้า</option>
+                                <option value="ติดต่อลูกค้า">ติดต่อลูกค้า</option>
+                                <option value="ประชุมนอกสถานที่">ประชุมนอกสถานที่</option>
+                                <option value="บำรุงรักษา">บำรุงรักษา</option>
+                                <option value="อื่นๆ">อื่นๆ</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">จุดหมาย</label>
+                            <input type="text" id="destination" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required placeholder="สถานที่ปลายทาง">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">เวลาออก</label>
+                                <input type="time" id="departureTime" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">เวลากลับ (คาดการณ์)</label>
+                                <input type="time" id="returnTime" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">น้ำมัน (ยี่ห้อ)</label>
+                            <input type="text" id="fuelBrand" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="เช่น ปตท., บางจาก">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">เติมน้ำมัน (ลิตร)</label>
+                            <input type="number" step="0.01" id="fuelAmount" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="เช่น 12.5">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">เส้นทาง (Google Maps URL หรือระบุจุดปลายทาง)</label>
+                            <input type="text" id="route" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="URL หรือชื่อจุด">
+                        </div>
+                        
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                            </svg>
+                            ลงทะเบียน
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Vehicle List and Map Panel -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Vehicle List -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+                        </svg>
+                        รายการรถที่ใช้งาน
+                        <span id="vehicleCount" class="ml-2 bg-green-100 text-green-800 text-sm px-2 py-1 rounded-full">0 คัน</span>
+                    </h2>
+                    <div id="vehicleList" class="space-y-3 max-h-64 overflow-y-auto">
+                        <div class="text-center text-gray-500 py-8">
+                            <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"/>
+                            </svg>
+                            ยังไม่มีรถลงทะเบียน
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map Panel -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        </svg>
+                        แผนที่ตำแหน่งรถ (จราจร)
+                    </h2>
+                    <div class="mb-2">
+                        <span class="text-sm text-gray-700">ตำแหน่งเริ่ม: บริษัท ทีซีเอ็ม โซอิ้ง แมชชีน เพชรเกษม 54</span>
+                    </div>
+                    <div id="realMap"></div>
+                    <div class="mt-3">
+                        <div class="inline-block bg-white p-3 rounded-lg shadow-md">
+                            <h4 class="font-medium text-sm mb-2">สัญลักษณ์</h4>
+                            <div class="space-y-1 text-xs">
+                                <div class="flex items-center"><div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div><span>ส่งสินค้า</span></div>
+                                <div class="flex items-center"><div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div><span>รับสินค้า</span></div>
+                                <div class="flex items-center"><div class="w-3 h-3 bg-purple-500 rounded-full mr-2"></div><span>ติดต่อลูกค้า</span></div>
+                                <div class="flex items-center"><div class="w-3 h-3 bg-orange-500 rounded-full mr-2"></div><span>อื่นๆ</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Polyline decoder for Google Maps-style polyline (optional) -->
+    <script src="https://unpkg.com/@mapbox/polyline"></script>
+    <script>
+        let vehicles = [];
+        let vehicleIdCounter = 1;
+
+        // Company's fixed location: บริษัท ทีซีเอ็ม โซอิ้ง แมชชีน เพชรเกษม 54
+        const COMPANY_LATLNG = [13.715975, 100.381165];
+
+        // Job type color
+        function getJobColor(jobType) {
+            const colors = {
+                'ส่งสินค้า': 'bg-green-500',
+                'รับสินค้า': 'bg-blue-500',
+                'ติดต่อลูกค้า': 'bg-purple-500',
+                'ประชุมนอกสถานที่': 'bg-indigo-500',
+                'บำรุงรักษา': 'bg-yellow-500',
+                'อื่นๆ': 'bg-orange-500'
+            };
+            return colors[jobType] || 'bg-gray-500';
+        }
+        function getJobColorMap(jobType) {
+            const colors = {
+                'ส่งสินค้า': '#22c55e',
+                'รับสินค้า': '#3b82f6',
+                'ติดต่อลูกค้า': '#a21caf',
+                'ประชุมนอกสถานที่': '#6366f1',
+                'บำรุงรักษา': '#eab308',
+                'อื่นๆ': '#f97316'
+            };
+            return colors[jobType] || '#6b7280';
+        }
+
+        // Update date and time
+        function updateDateTime() {
+            const now = new Date();
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('th-TH');
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('th-TH');
+        }
+        function setDefaultTime() {
+            const now = new Date();
+            const timeString = now.toTimeString().slice(0, 5);
+            document.getElementById('departureTime').value = timeString;
+        }
+
+        // Add vehicle to list
+        function addVehicleToList(vehicle) {
+            const vehicleList = document.getElementById('vehicleList');
+            if (vehicleList.children.length === 1 && vehicleList.children[0].textContent.includes('ยังไม่มีรถลงทะเบียน')) {
+                vehicleList.innerHTML = '';
+            }
+            const vehicleItem = document.createElement('div');
+            vehicleItem.className = 'bg-gray-50 p-4 rounded-lg border border-gray-200';
+            vehicleItem.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <div class="flex items-center mb-2">
+                            <span class="font-bold text-lg text-gray-800">${vehicle.plateNumber}</span>
+                            <span class="ml-2 px-2 py-1 ${getJobColor(vehicle.jobType)} text-white text-xs rounded-full">${vehicle.jobType}</span>
+                        </div>
+                        <p class="text-sm text-gray-600"><strong>ผู้ขับ:</strong> ${vehicle.driverName}</p>
+                        <p class="text-sm text-gray-600"><strong>จุดหมาย:</strong> ${vehicle.destination}</p>
+                        <p class="text-sm text-gray-600"><strong>เวลาออก:</strong> ${vehicle.departureTime}</p>
+                        ${vehicle.returnTime ? `<p class="text-sm text-gray-600"><strong>เวลากลับ:</strong> ${vehicle.returnTime}</p>` : ''}
+                        ${vehicle.fuelBrand ? `<p class="text-sm text-gray-600"><strong>เติมน้ำมัน:</strong> ${vehicle.fuelBrand} ${vehicle.fuelAmount || ''}${vehicle.fuelAmount ? ' ลิตร' : ''}</p>` : ''}
+                        ${vehicle.route ? `<p class="text-sm text-gray-600"><strong>เส้นทาง:</strong> ${vehicle.route}</p>` : ''}
+                    </div>
+                    <button onclick="removeVehicle(${vehicle.id})" class="text-red-500 hover:text-red-700 ml-4">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                    </button>
+                </div>
+            `;
+            vehicleList.appendChild(vehicleItem);
+        }
+
+        // Remove vehicle
+        function removeVehicle(vehicleId) {
+            vehicles = vehicles.filter(v => v.id !== vehicleId);
+            updateVehicleDisplay();
+        }
+
+        // Update vehicle display
+        function updateVehicleDisplay() {
+            document.getElementById('vehicleCount').textContent = `${vehicles.length} คัน`;
+            // List
+            const vehicleList = document.getElementById('vehicleList');
+            vehicleList.innerHTML = '';
+            if (vehicles.length === 0) {
+                vehicleList.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99z"/>
+                        </svg>
+                        ยังไม่มีรถลงทะเบียน
+                    </div>
+                `;
+            } else {
+                vehicles.forEach(vehicle => addVehicleToList(vehicle));
+            }
+            // Map
+            updateMap();
+        }
+
+        // Leaflet map and marker
+        let map, companyMarker;
+        let vehicleMarkers = {};
+        let vehiclePolylines = {};
+
+        function initMap() {
+            map = L.map('realMap').setView(COMPANY_LATLNG, 14);
+
+            // OpenStreetMap layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 20,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Traffic overlay (Google traffic layer is not free/public, so use OpenStreetMap only)
+            // Show company marker
+            companyMarker = L.marker(COMPANY_LATLNG, {
+                title: "บริษัท ทีซีเอ็ม โซอิ้ง แมชชีน เพชรเกษม 54"
+            }).addTo(map)
+                .bindPopup(`<b>บริษัท ทีซีเอ็ม โซอิ้ง แมชชีน เพชรเกษม 54</b>`, {closeButton: false})
+                .openPopup();
+        }
+
+        // Helper: Get LatLng from text (simulate for demo purposes)
+        async function geocodePlace(place) {
+            // Simple API for demo: Nominatim (OpenStreetMap)
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+                if (data && data[0]) {
+                    return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+                }
+            } catch (e) {}
+            return null;
+        }
+        // Helper: Parse route input and get LatLng array (for polyline)
+        async function getRouteLatLngs(routeInput) {
+            // If Google Maps URL with "dir", try to extract destination
+            if (routeInput && routeInput.startsWith('http') && routeInput.includes('/maps/dir/')) {
+                // Try to parse lat,lng at the end of the URL, fallback to geocoding the address
+                const match = routeInput.match(/@([0-9\.\-]+),([0-9\.\-]+)/);
+                if (match) {
+                    return [COMPANY_LATLNG, [parseFloat(match[1]), parseFloat(match[2])]];
+                }
+                // If not lat,lng, try to extract address after /dir/ and geocode
+                const parts = routeInput.split('/dir/')[1]?.split('/');
+                if (parts && parts.length >= 2) {
+                    const dest = parts[1];
+                    const destLatLng = await geocodePlace(decodeURIComponent(dest));
+                    if (destLatLng) return [COMPANY_LATLNG, destLatLng];
+                }
+            } else if (routeInput) {
+                // If just place name, geocode
+                const destLatLng = await geocodePlace(routeInput);
+                if (destLatLng) return [COMPANY_LATLNG, destLatLng];
+            }
+            // If nothing valid, return just company
+            return [COMPANY_LATLNG];
+        }
+
+        // Add vehicle marker and polyline to map
+        async function updateMap() {
+            // Clear existing
+            for (const id in vehicleMarkers) {
+                map.removeLayer(vehicleMarkers[id]);
+            }
+            for (const id in vehiclePolylines) {
+                map.removeLayer(vehiclePolylines[id]);
+            }
+            vehicleMarkers = {};
+            vehiclePolylines = {};
+
+            // Add company marker always
+            if (!companyMarker) {
+                companyMarker = L.marker(COMPANY_LATLNG, {title: "บริษัท ทีซีเอ็ม โซอิ้ง แมชชีน เพชรเกษม 54"}).addTo(map)
+                    .bindPopup(`<b>บริษัท ทีซีเอ็ม โซอิ้ง แมชชีน เพชรเกษม 54</b>`);
+            }
+
+            // Add each vehicle
+            for (const vehicle of vehicles) {
+                let latlngs = [COMPANY_LATLNG]; // Default
+                if (vehicle.route) {
+                    latlngs = await getRouteLatLngs(vehicle.route);
+                }
+                // Polyline for route
+                if (latlngs.length > 1) {
+                    const poly = L.polyline(latlngs, {
+                        color: getJobColorMap(vehicle.jobType),
+                        weight: 5,
+                        opacity: 0.7,
+                        dashArray: '8,8'
+                    }).addTo(map);
+                    vehiclePolylines[vehicle.id] = poly;
+                    map.fitBounds(poly.getBounds(), {padding: [20,20]});
+                }
+                // Marker at destination
+                let destLatLng = latlngs.length > 1 ? latlngs[latlngs.length-1] : latlngs[0];
+                const marker = L.circleMarker(destLatLng, {
+                    radius: 12,
+                    fillColor: getJobColorMap(vehicle.jobType),
+                    color: "#fff",
+                    weight: 2,
+                    fillOpacity: 0.85
+                }).addTo(map)
+                .bindPopup(`
+                    <b>${vehicle.plateNumber}</b> (${vehicle.jobType})<br>
+                    <b>ผู้ขับ:</b> ${vehicle.driverName}<br>
+                    <b>จุดหมาย:</b> ${vehicle.destination}<br>
+                    ${vehicle.fuelBrand ? `<b>เติมน้ำมัน:</b> ${vehicle.fuelBrand} ${vehicle.fuelAmount || ''}${vehicle.fuelAmount ? ' ลิตร' : ''}<br>` : ''}
+                    ${vehicle.returnTime ? `<b>เวลากลับ:</b> ${vehicle.returnTime}<br>` : ''}
+                `);
+                vehicleMarkers[vehicle.id] = marker;
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('vehicleForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const vehicle = {
+                id: vehicleIdCounter++,
+                plateNumber: document.getElementById('plateNumber').value,
+                driverName: document.getElementById('driverName').value,
+                jobType: document.getElementById('jobType').value,
+                destination: document.getElementById('destination').value,
+                departureTime: document.getElementById('departureTime').value,
+                returnTime: document.getElementById('returnTime').value,
+                fuelBrand: document.getElementById('fuelBrand').value,
+                fuelAmount: document.getElementById('fuelAmount').value,
+                route: document.getElementById('route').value
+            };
+            vehicles.push(vehicle);
+            updateVehicleDisplay();
+
+            // Reset form
+            this.reset();
+            setDefaultTime();
+
+            // Show success message
+            const button = this.querySelector('button[type="submit"]');
+            const originalText = button.innerHTML;
+            button.innerHTML = `
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                ลงทะเบียนสำเร็จ!
+            `;
+            button.className = 'w-full bg-green-600 text-white font-medium py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center';
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.className = 'w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center';
+            }, 2000);
+        });
+
+        // Initialize
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+        setDefaultTime();
+        window.onload = () => {
+            initMap();
+        };
+    </script>
+</body>
+</html>
